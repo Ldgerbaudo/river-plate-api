@@ -25,9 +25,11 @@ function authMiddleware(req, res, next) {
   next();
 }
 
+let partidos = [];
 
 // endpoints
 app.get('/', (req, res) => res.send('API de River'));
+
 app.get('/partidos', authMiddleware, (req, res) => res.json(partidos));
 
 app.post('/partidos', authMiddleware, (req, res) => {
@@ -62,7 +64,6 @@ app.post('/partidos', authMiddleware, (req, res) => {
 
   res.status(201).json(nuevoPartido);
 });
-
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
