@@ -27,16 +27,16 @@ function authMiddleware(req, res, next) {
 
 let partidos = [];
 
-// endpoints
+// ENDPOINTS
 app.get('/', (req, res) => res.send('API de River'));
 
 app.get('/partidos', authMiddleware, (req, res) => res.json(partidos));
 
 app.post('/partidos', authMiddleware, (req, res) => {
-  const { fecha, rival, competicion, estado, resultado, goleadores } = req.body;
+  const { fecha, rival, competicion, estado, estadio, resultado, goleadores } = req.body;
 
-  if (!fecha || !rival || !competicion || !estado || !resultado) {
-    return res.status(400).json({ error: "Faltan campos obligatorios: fecha, rival, competicion, estado o resultado" });
+  if (!fecha || !rival || !competicion || !estado || !estadio || !resultado) {
+    return res.status(400).json({ error: "Faltan campos obligatorios: fecha, rival, competicion, estado, estadio o resultado" });
   }
 
   if (!/^\d{8}$/.test(fecha)) {
@@ -56,6 +56,7 @@ app.post('/partidos', authMiddleware, (req, res) => {
     rival,
     competicion,
     estado,
+    estadio,
     resultado,
     goleadores: goleadores || []
   };
@@ -63,6 +64,66 @@ app.post('/partidos', authMiddleware, (req, res) => {
   partidos.push(nuevoPartido);
 
   res.status(201).json(nuevoPartido);
+});
+
+app.post('/partidos/batch', authMiddleware, (req, res) => {
+  const partidosNuevos = req.body;
+  if (!Array.isArray(partidosNuevos)) {
+    return res.status(400).json({ error: "Debes enviar un array de partidos" });
+  }
+
+  const errores = [];
+  const agregados = [];
+
+  partidosNuevos.forEach((p, index) => {
+    const { fecha, rival, competicion, estado, estadio, resultado, goleadores } = p;
+
+    if (!fecha || !rival || !competicion || !estado || !estadio || !resultado) {
+      errores.push({ index, error: "Faltan campos obligatorios: fecha, rival, competicion, estado, estadio o resultado" });
+      return;
+    }
+
+    if (!/^\d{8}$/.test(fecha)) {
+      errores.push({ index, error: "Formato de fecha inválido. Debe ser DDMMYYYY" });
+      return;
+    }
+
+    if (goleadores && (!Array.isArray(goleadores) || goleadores.some(g => !g.nombre || !g.minuto || !g.equipo))) {
+      errores.push({ index, error: "Cada goleador debe tener nombre, minuto y equipo" });
+      return;
+    }
+
+    const id = fecha;
+    const fechaFormateada = `${fecha.substring(0,2)}-${fecha.substring(2,4)}-${fecha.substring(4,8)}`;
+
+    const nuevoPartido = {
+      id,
+      fecha: fechaFormateada,
+      rival,
+      competicion,
+      estado,
+      estadio,
+      resultado,
+      goleadores: goleadores || []
+    };
+
+    partidos.push(nuevoPartido);
+    agregados.push(nuevoPartido);
+  });
+
+  res.status(201).json({ agregados, errores });
+});
+
+app.delete('/partidos/:id', authMiddleware, (req, res) => {
+  const { id } = req.params;
+
+  const index = partidos.findIndex(p => p.id === id);
+  if (index === -1) {
+    return res.status(404).json({ error: `No se encontró partido con id ${id}` });
+  }
+
+  const eliminado = partidos.splice(index, 1)[0];
+  res.status(200).json({ mensaje: "Partido eliminado", partido: eliminado });
 });
 
 const PORT = process.env.PORT || 3000;
