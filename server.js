@@ -34,11 +34,15 @@ app.post('/partidos', authMiddleware, (req, res) => {
   const { fecha, rival, competicion, estado, resultado, goleadores } = req.body;
 
   if (!fecha || !rival || !competicion || !estado || !resultado) {
-    return res.status(400).json({ error: "completar: fecha, rival, competicion, estado o resultado" });
+    return res.status(400).json({ error: "Faltan campos obligatorios: fecha, rival, competicion, estado o resultado" });
   }
 
   if (!/^\d{8}$/.test(fecha)) {
     return res.status(400).json({ error: "Formato de fecha inválido. Debe ser DDMMYYYY" });
+  }
+
+  if (goleadores && (!Array.isArray(goleadores) || goleadores.some(g => !g.nombre || !g.minuto || !g.equipo))) {
+    return res.status(400).json({ error: "Cada goleador debe tener nombre, minuto y equipo" });
   }
 
   const id = fecha;
@@ -51,7 +55,7 @@ app.post('/partidos', authMiddleware, (req, res) => {
     competicion,
     estado,
     resultado,
-    goleadores: Array.isArray(goleadores) ? goleadores : []
+    goleadores: goleadores || []
   };
 
   partidos.push(nuevoPartido);
