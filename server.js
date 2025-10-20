@@ -31,14 +31,14 @@ app.get('/', (req, res) => res.send('API de River'));
 app.get('/partidos', authMiddleware, (req, res) => res.json(partidos));
 
 app.post('/partidos', authMiddleware, (req, res) => {
-  const { fecha, rival, competicion, estado, resultado, goleadores, tarjetas, descripcion } = req.body;
+  const { fecha, rival, competicion, estado, resultado, goleadores } = req.body;
 
   if (!fecha || !rival || !competicion || !estado || !resultado) {
     return res.status(400).json({ error: "completar: fecha, rival, competicion, estado o resultado" });
   }
 
   if (!/^\d{8}$/.test(fecha)) {
-    return res.status(400).json({ error: "pero pone en formato DDMMYYYY" });
+    return res.status(400).json({ error: "Formato de fecha inválido. Debe ser DDMMYYYY" });
   }
 
   const id = fecha;
@@ -51,9 +51,7 @@ app.post('/partidos', authMiddleware, (req, res) => {
     competicion,
     estado,
     resultado,
-    goleadores: goleadores || [],
-    tarjetas: tarjetas || [],
-    descripcion: descripcion || ""
+    goleadores: Array.isArray(goleadores) ? goleadores : []
   };
 
   partidos.push(nuevoPartido);
