@@ -25,14 +25,42 @@ function authMiddleware(req, res, next) {
   next();
 }
 
-let partidos = [
-  { id: 1, fecha: "1901-05-01", rival: "Equipo X", goles_local: 2, goles_visitante: 1 },
-  { id: 2, fecha: "1901-06-15", rival: "Equipo Y", goles_local: 3, goles_visitante: 0 },
-  { id: 3, fecha: "1902-07-10", rival: "Equipo Z", goles_local: 1, goles_visitante: 1 }
-];
 
-app.get('/', (req, res) => res.send('🔥 API de River'));
+// endpoints
+app.get('/', (req, res) => res.send('API de River'));
 app.get('/partidos', authMiddleware, (req, res) => res.json(partidos));
+
+app.post('/partidos', authMiddleware, (req, res) => {
+  const { fecha, rival, competicion, estado, resultado, goleadores, tarjetas, descripcion } = req.body;
+
+  if (!fecha || !rival || !competicion || !estado || !resultado) {
+    return res.status(400).json({ error: "completar: fecha, rival, competicion, estado o resultado" });
+  }
+
+  if (!/^\d{8}$/.test(fecha)) {
+    return res.status(400).json({ error: "pero pone en formato DDMMYYYY" });
+  }
+
+  const id = fecha;
+  const fechaFormateada = `${fecha.substring(0,2)}-${fecha.substring(2,4)}-${fecha.substring(4,8)}`;
+
+  const nuevoPartido = {
+    id,
+    fecha: fechaFormateada,
+    rival,
+    competicion,
+    estado,
+    resultado,
+    goleadores: goleadores || [],
+    tarjetas: tarjetas || [],
+    descripcion: descripcion || ""
+  };
+
+  partidos.push(nuevoPartido);
+
+  res.status(201).json(nuevoPartido);
+});
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
